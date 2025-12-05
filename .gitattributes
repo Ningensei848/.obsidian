@@ -1,0 +1,170 @@
+###############################################################################
+# 基本ポリシー：テキストは LF、UTF-8（BOMなし）に統一
+#  - Windows でも差分が安定します
+#  - CRLF を必要とする拡張子は後段で例外指定
+###############################################################################
+*               text=auto eol=lf
+
+# 明示：Markdown・テキストはUTF-8＋LF
+*.md            text working-tree-encoding=UTF-8 eol=lf
+*.markdown      text working-tree-encoding=UTF-8 eol=lf
+*.txt           text working-tree-encoding=UTF-8 eol=lf
+*.csv           text working-tree-encoding=UTF-8 eol=lf
+*.tsv           text working-tree-encoding=UTF-8 eol=lf
+*.json          text working-tree-encoding=UTF-8 eol=lf
+*.yml           text working-tree-encoding=UTF-8 eol=lf
+*.yaml          text working-tree-encoding=UTF-8 eol=lf
+
+# シェル/スクリプト（UNIX系）— LF
+*.sh            text eol=lf
+*.bash          text eol=lf
+*.py            text eol=lf
+*.rb            text eol=lf
+*.pl            text eol=lf
+
+# Windows スクリプトは CRLF（実行互換のため）
+*.bat           text eol=crlf
+*.cmd           text eol=crlf
+*.ps1           text eol=crlf
+*.psm1          text eol=crlf
+
+*.ini           text eol=lf
+*.conf          text eol=lf
+*.toml          text eol=lf
+*.html          text eol=lf
+*.css           text eol=lf
+*.js            text eol=lf
+*.ts            text eol=lf
+*.eml           text eol=lf
+*.srt           text eol=lf
+*.vtt           text eol=lf
+.gitignore      text eol=lf
+.gitmodules     text eol=lf
+.gitattributes  text eol=lf
+###############################################################################
+# バイナリ（diff 無効化 = 差分・改行変換をしない）
+###############################################################################
+# 画像・動画・音声・Office・圧縮・VM・DB・PCAP・ログなど
+*.jpg    binary
+*.jpeg   binary
+*.png    binary
+*.gif    binary
+*.svg    binary
+*.avif   binary
+*.webp   binary
+*.heic   binary
+*.heif   binary
+*.raw    binary
+*.tif    binary
+*.tiff   binary
+*.nef    binary
+*.cr2    binary
+*.cr3    binary
+*.arw    binary
+*.raf    binary
+*.orf    binary
+*.dng    binary
+*.pdf    binary
+*.doc    binary
+*.docx   binary
+*.xls    binary
+*.xlsx   binary
+*.ppt    binary
+*.pptx   binary
+*.mp4    binary
+*.mov    binary
+*.avi    binary
+*.mkv    binary
+*.webm   binary
+*.flv    binary
+*.wmv    binary
+*.mp3    binary
+*.wav    binary
+*.aac    binary
+*.flac   binary
+*.ogg    binary
+*.stl    binary
+*.obj    binary
+*.fbx    binary
+*.blend  binary
+*.psd    binary
+*.ai     binary
+*.eps    binary
+*.indd   binary
+*.ttf    binary
+*.otf    binary
+*.woff   binary
+*.woff2  binary
+*.zip    binary
+*.tar    binary
+*.gz     binary
+*.bz2    binary
+*.xz     binary
+*.7z     binary
+*.rar    binary
+*.zst    binary
+*.iso    binary
+*.img    binary
+*.dmg    binary
+*.vmdk   binary
+*.vdi    binary
+*.vhd    binary
+*.vhdx   binary
+*.ova    binary
+*.ovf    binary
+*.qcow2  binary
+*.cow    binary
+*.sqlite binary
+*.db     binary
+*.mdb    binary
+*.accdb  binary
+*.bak    binary
+*.dump   binary
+*.pcap   binary
+*.pcapng binary
+*.log    binary
+*.tmp    binary
+*.temp   binary
+*.swp    binary
+*.swo    binary
+*.lock   binary
+*.cache  binary
+Thumbs.db binary
+desktop.ini binary
+###############################################################################
+# 開発補助（必要に応じて）
+###############################################################################
+# Markdown の見出しを hunk header にする（差分の可読性UP）
+# → 併せて .git/config で diff.driver を定義
+*.md            diff=markdown
+
+# 大容量の一時生成物（念のため）
+*.bin           binary
+*.dat           binary
+*.lock          -text -diff
+
+###############################################################################
+# マージ戦略の指定
+###############################################################################
+# --> .git/config に `[merge "xxx"]` セクションを書き込むことで設定が有効化
+# === ローカル（自分側）を常に採用 ==================
+MyWork/* merge=ours
+Shared/User/* merge=ours
+Shared/Project/* merge=ours
+# === upstream（相手側）を常に採用 ==============
+LICENSE merge=theirs
+README.md merge=theirs
+.env.example merge=theirs
+.gitignore merge=theirs
+.gitmodules merge=theirs
+.gitattributes merge=theirs
+.obsidian merge=theirs
+# --- * (wildcard) によるフォルダ指定
+__Attachment/* merge=theirs
+__Document/* merge=theirs
+__Template/* merge=theirs
+.script/* merge=theirs
+# --- 拡張子によるファイル指定
+*.ps1 merge=theirs
+*.sh  merge=theirs
+# =====================================

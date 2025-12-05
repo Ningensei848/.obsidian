@@ -1,0 +1,11 @@
+{
+    "livePreview": true,
+    "strictLineBreaks": true,
+    "showLineNumber": true,
+    "alwaysUpdateLinks": true,
+    "newFileLocation": "folder",
+    "newLinkFormat": "absolute",
+    "showUnsupportedFiles": false,
+    "attachmentFolderPath": "__Attachment",
+    "newFileFolderPath": "MyWork/Misc"
+}
