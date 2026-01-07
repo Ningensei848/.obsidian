@@ -1,0 +1,10 @@
+{
+    "items": [
+        {
+            "type": "folder",
+            "ctime": 1735687800000,
+            "path": "Shared/User/{{USER_ID}}",
+            "title": "Home"
+        }
+    ]
+}
