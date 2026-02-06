@@ -1,0 +1,11 @@
+{
+  "recentFiles": [],
+  "omittedPaths": [
+    "^__Template/",
+    "^__Attachment/",
+    "^__Document/"
+  ],
+  "omittedTags": [],
+  "updateOn": "file-open",
+  "omitBookmarks": true
+}
