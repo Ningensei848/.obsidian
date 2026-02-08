@@ -10,4 +10,4 @@ title: .obsidian/README.md
 
 ## 日々の運用
 
-Obsidian Vault の直下に本リポジトリを `.obsidian` サブモジュールとして運用する
+本リポジトリを Obsidian Vault の直下に置き、 `.obsidian` サブモジュールとして運用する
