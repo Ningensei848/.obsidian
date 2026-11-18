@@ -47,6 +47,17 @@ def parse_json(data, scope):
                          column=getattr(cause, "colno", None)) from cause
 
 
+def same_content(path, expected, actual):
+    if expected == actual:
+        return True
+    if actual is None or path.suffix != ".json":
+        return False
+    # Obsidian の保存で変わる改行コード・ファイル末尾の空白だけは競合にしない。
+    def normalize(data):
+        return data.replace(b"\r\n", b"\n").rstrip(b" \t\r\n")
+    return normalize(expected) == normalize(actual)
+
+
 def relative_path(value, *, root=False):
     if root and value in ("", "/"):
         return Path()
@@ -93,11 +104,18 @@ def make_plan(source, vault):
         add(source / name, config / name)
     for src in sorted(source.glob("*.default.json")):
         add(src, config / src.name.replace(".default.json", ".json"))
+    bundled_plugins = set()
     for plugin in sorted((source / "plugins").iterdir()):
         if plugin.is_symlink():
             raise SetupError("SOURCE_SYMLINK", "preflight", str(plugin))
         if not plugin.is_dir():
             continue
+        manifest = parse_json(read(plugin / "manifest.json"), plugin / "manifest.json")
+        if not isinstance(manifest, dict) or manifest.get("id") != plugin.name:
+            raise SetupError("PLUGIN_DIRECTORY_ID_MISMATCH", "preflight", str(plugin))
+        if not (plugin / "main.js").is_file() or not read(plugin / "main.js"):
+            raise SetupError("PLUGIN_MAIN_MISSING", "preflight", plugin.name)
+        bundled_plugins.add(plugin.name)
         for name in PLUGIN_FILES:
             src = plugin / name
             if src.exists():
@@ -107,6 +125,13 @@ def make_plan(source, vault):
             add(preset, config / "plugins" / plugin.name / "data.json")
         elif (plugin / "data.json").is_file():
             add(plugin / "data.json", config / "plugins" / plugin.name / "data.json")
+
+    enabled_plugins = parse_json(files[config / "community-plugins.json"][0], "community-plugins.json")
+    if not isinstance(enabled_plugins, list) or not all(isinstance(value, str) for value in enabled_plugins):
+        raise SetupError("INVALID_PLUGIN_LIST", "preflight", "community-plugins.json")
+    for plugin_id in enabled_plugins:
+        if plugin_id not in bundled_plugins:
+            raise SetupError("ENABLED_PLUGIN_NOT_BUNDLED", "preflight", plugin_id)
 
     def settings(name):
         return parse_json(files[config / name][0], name)
@@ -190,8 +215,12 @@ def activate(args, vault):
     causes = ("VAULT_MISMATCH", "CONFIG_DIR_MISMATCH", "TEMPLATER_NOT_LOADED", "ACTIVATION_NOT_SAVED")
     known = next((code for code in causes if f"DOT_OBSIDIAN_{code}" in output), None)
     marker = "DOT_OBSIDIAN_TEMPLATER_ENABLED"
-    confirmed = any(line.strip() in (marker, json.dumps(marker), repr(marker))
-                    for line in result.stdout.splitlines())
+    def is_confirmation(line):
+        value = line.strip()
+        if value.startswith("=> "):
+            value = value[3:].strip()
+        return value in (marker, json.dumps(marker), repr(marker))
+    confirmed = any(is_confirmation(line) for line in result.stdout.splitlines())
     if result.returncode or known or not confirmed:
         # CLI の生出力には文書やプラグインのログが含まれ得るため記録しない。
         raise SetupError(known or "OBSIDIAN_CLI_RESULT_UNCONFIRMED", "activate",
@@ -230,7 +259,7 @@ def main(argv=None):
         conflicts = []
         for path, (data, mode) in files.items():
             old = read(path) if path.exists() else None
-            if old == data:
+            if same_content(path, data, old):
                 continue
             changes.append((path, data, mode, old))
             if old is not None:

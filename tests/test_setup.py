@@ -44,7 +44,8 @@ class SetupTests(unittest.TestCase):
                 if (plugin / name).is_file():
                     shutil.copy2(plugin / name, target / name)
             # The installer must copy only known payloads, not arbitrary files.
-            (target / "main.js").write_text("// test plugin payload\n", encoding="utf-8")
+            if (plugin / "main.js").is_file():
+                (target / "main.js").write_text("// test plugin payload\n", encoding="utf-8")
             (target / "private.txt").write_text("PRIVATE_NOT_FOR_DEPLOYMENT", encoding="utf-8")
         self.vault = self.root / "新規 Vault with spaces"
 
@@ -80,6 +81,72 @@ class SetupTests(unittest.TestCase):
         result = self.run_setup()
         self.assertEqual(before, self.snapshot())
         self.assertIn('"changed": 0', result.stdout)
+
+    def test_repository_enabled_plugins_have_complete_payloads(self):
+        # Use real repository payloads, so the fixture cannot hide missing main.js files.
+        files, _ = setup.make_plan(ROOT, self.vault)
+        config = self.vault / ".obsidian"
+        enabled = json.loads(files[config / "community-plugins.json"][0])
+        self.assertNotIn("copy-document-as-html", enabled)
+        self.assertFalse((ROOT / "plugins" / "copy-document-as-html").exists())
+        self.assertFalse((ROOT / "plugins" / "obsidian-external-file-embed-and-link").exists())
+        self.assertIn("external-file-embed-and-link", enabled)
+        for plugin_id in enabled:
+            directory = config / "plugins" / plugin_id
+            self.assertEqual(json.loads(files[directory / "manifest.json"][0])["id"], plugin_id)
+            self.assertTrue(files[directory / "main.js"][0])
+
+    def test_plugin_directory_must_match_manifest_id(self):
+        plugin = self.source / "plugins" / "external-file-embed-and-link"
+        plugin.rename(plugin.with_name("obsidian-external-file-embed-and-link"))
+        result = self.run_setup(expected=1)
+        self.assertIn("PLUGIN_DIRECTORY_ID_MISMATCH", result.stderr)
+        self.assertFalse(self.vault.exists())
+
+    def test_missing_plugin_main_fails_before_writing(self):
+        (self.source / "plugins" / "external-file-embed-and-link" / "main.js").unlink()
+        result = self.run_setup(expected=1)
+        self.assertIn("PLUGIN_MAIN_MISSING", result.stderr)
+        self.assertFalse(self.vault.exists())
+
+    def test_enabled_plugin_must_be_bundled(self):
+        path = self.source / "community-plugins.default.json"
+        enabled = json.loads(path.read_text(encoding="utf-8"))
+        enabled.append("missing-plugin")
+        path.write_text(json.dumps(enabled), encoding="utf-8")
+        result = self.run_setup(expected=1)
+        self.assertIn("ENABLED_PLUGIN_NOT_BUNDLED", result.stderr)
+        self.assertIn("missing-plugin", result.stderr)
+        self.assertFalse(self.vault.exists())
+
+    def test_json_missing_final_newline_does_not_conflict_or_rewrite(self):
+        self.run_setup()
+        path = self.vault / ".obsidian" / "plugins" / "omnisearch" / "data.json"
+        path.write_bytes(path.read_bytes().rstrip(b"\n"))
+        before = self.snapshot()
+        result = self.run_setup()
+        self.assertEqual(before, self.snapshot())
+        self.assertIn('"changed": 0', result.stdout)
+
+    def test_json_windows_line_endings_do_not_conflict_or_rewrite(self):
+        self.run_setup()
+        path = self.vault / ".obsidian" / "plugins" / "omnisearch" / "data.json"
+        path.write_bytes(path.read_bytes().replace(b"\n", b"\r\n"))
+        before = self.snapshot()
+        result = self.run_setup()
+        self.assertEqual(before, self.snapshot())
+        self.assertIn('"changed": 0', result.stdout)
+
+    def test_json_value_changes_still_require_explicit_overwrite(self):
+        self.run_setup()
+        path = self.vault / ".obsidian" / "plugins" / "omnisearch" / "data.json"
+        settings = json.loads(path.read_text(encoding="utf-8"))
+        settings["useCache"] = not settings["useCache"]
+        path.write_text(json.dumps(settings, indent=2), encoding="utf-8")
+        before = self.snapshot()
+        result = self.run_setup(expected=1)
+        self.assertIn("EXISTING_CONTENT_DIFFERS", result.stderr)
+        self.assertEqual(before, self.snapshot())
 
     def test_dry_run_writes_nothing(self):
         self.run_setup("--dry-run", "--activate")
@@ -186,6 +253,13 @@ class SetupTests(unittest.TestCase):
         self.assertTrue(command[3].startswith("code="))
         self.assertEqual(run.call_args.kwargs["cwd"], self.vault)
         self.assertNotIn("shell", run.call_args.kwargs)
+
+    def test_activation_accepts_obsidian_eval_result_prefix(self):
+        args = SimpleNamespace(obsidian_cli="obsidian", obsidian_vault=None)
+        result = subprocess.CompletedProcess([], 0, "=> DOT_OBSIDIAN_TEMPLATER_ENABLED\n", "")
+        with patch.object(setup.subprocess, "run", return_value=result):
+            with patch("sys.stdout", new_callable=io.StringIO):
+                setup.activate(args, self.vault)
 
     def test_activation_does_not_accept_marker_inside_an_error_dump(self):
         args = SimpleNamespace(obsidian_cli="obsidian", obsidian_vault=None)
