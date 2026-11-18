@@ -1,5 +1,5 @@
 {
-  "version": "3.13.1",
+  "version": "4.3.0",
   "templates": {
     "common": {
       "main": "title",
@@ -16,7 +16,7 @@
       "value": ""
     }
   },
-"debug": true,
+  "debug": true,
   "boot": {
     "delay": 6000,
     "background": true
@@ -40,7 +40,7 @@
       }
     },
     "tab": {
-    "enabled": true,
+      "enabled": true,
       "templates": {
         "main": "",
         "fallback": ""
@@ -54,14 +54,14 @@
       }
     },
     "graph": {
-    "enabled": true,
+      "enabled": true,
       "templates": {
         "main": "",
         "fallback": ""
       }
     },
     "bookmarks": {
-    "enabled": true,
+      "enabled": true,
       "templates": {
         "main": "",
         "fallback": ""
@@ -75,11 +75,12 @@
       }
     },
     "suggest": {
-    "enabled": true,
+      "enabled": true,
       "templates": {
         "main": "",
         "fallback": ""
-      }
+      },
+      "insertAlias": true
     },
     "inlineTitle": {
       "enabled": true,
@@ -89,14 +90,14 @@
       }
     },
     "canvas": {
-    "enabled": true,
+      "enabled": true,
       "templates": {
         "main": "",
         "fallback": ""
       }
     },
     "backlink": {
-    "enabled": true,
+      "enabled": true,
       "templates": {
         "main": "",
         "fallback": ""
@@ -110,7 +111,7 @@
       }
     },
     "noteLink": {
-    "enabled": true,
+      "enabled": true,
       "strategy": "onlyEmpty",
       "approval": true,
       "templates": {

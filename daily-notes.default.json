@@ -1,5 +1,6 @@
 {
   "folder": "MyWork/Daily",
+  "format": "YYYY/MM/YYYYMMDD",
   "autorun": false,
-  "template": "__Template/Daily"
+  "template": "__Template/Daily.md"
 }
